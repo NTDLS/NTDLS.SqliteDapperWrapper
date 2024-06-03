@@ -9,7 +9,14 @@ namespace NTDLS.SqliteDapperWrapper
     /// </summary>
     public class DisposableValueListTable : IDisposable
     {
+        /// <summary>
+        /// The underlying connection to the SQLite database.
+        /// </summary>
         public SqliteConnection NativeConnection { get; private set; }
+
+        /// <summary>
+        /// The table name of the temporary table.
+        /// </summary>
         public string TableName { get; private set; }
 
         internal DisposableValueListTable(SqliteConnection nativeConnection, string tableName)
@@ -18,6 +25,9 @@ namespace NTDLS.SqliteDapperWrapper
             TableName = tableName;
         }
 
+        /// <summary>
+        /// Drops the temporary table.
+        /// </summary>
         public void Dispose()
         {
             NativeConnection.Execute($"DROP TABLE {TableName}");

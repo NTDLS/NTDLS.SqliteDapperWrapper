@@ -6,3 +6,5 @@ TestApp/obj/
 NTDLS.SqliteDapperWrapper/bin/
 
 NTDLS.SqliteDapperWrapper/obj/
+
+.vs/
