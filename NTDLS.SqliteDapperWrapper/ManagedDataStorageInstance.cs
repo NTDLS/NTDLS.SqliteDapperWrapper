@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.Sqlite;
 using System.Data;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Caching;
 using System.Text;
@@ -235,7 +236,6 @@ namespace NTDLS.SqliteDapperWrapper
             NativeConnection.Execute($"ATTACH DATABASE '{Directory}\\{databaseFileName}' AS {alias};");
             return new DisposableAttachment(NativeConnection, alias);
         }
-
 
         /// <summary>
         /// Returns the given text, or if the script ends with ".sql", the script will be
