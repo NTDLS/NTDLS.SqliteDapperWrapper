@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.Sqlite;
 using System.Data;
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Caching;
 using System.Text;
@@ -241,14 +240,11 @@ namespace NTDLS.SqliteDapperWrapper
         /// Returns the given text, or if the script ends with ".sql", the script will be
         /// located and loaded form the executing assembly (assuming it is an embedded resource).
         /// </summary>
-        /// <param name="script"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
-        public static string TranslateSqlScript(string script)
+        public static string TranslateSqlScript(string scriptNameOrText)
         {
-            string cacheKey = $":{script.ToLower()}".Replace('.', ':');
+            string cacheKey = $":{scriptNameOrText.ToLowerInvariant()}".Replace('.', ':').Replace('\\', ':').Replace('/', ':');
 
-            if (cacheKey.EndsWith(":sql"))
+            if (cacheKey.EndsWith(":sql", StringComparison.InvariantCultureIgnoreCase))
             {
                 if (_cache.Get(cacheKey) is string cachedScriptText)
                 {
@@ -266,26 +262,23 @@ namespace NTDLS.SqliteDapperWrapper
                     }
                 }
 
-                throw new Exception($"The embedded script resource could not be found after enumeration: '{cacheKey}'");
+                throw new Exception($"The embedded script resource could not be found after enumeration: '{scriptNameOrText}'");
             }
 
-            return script;
+            return scriptNameOrText;
         }
 
         /// <summary>
         /// Searches the given assembly for a script file.
         /// </summary>
-        /// <param name="assembly"></param>
-        /// <param name="cacheKey"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        /// <exception cref="InvalidOperationException"></exception>
-        private static string? SearchAssembly(Assembly assembly, string cacheKey)
+        private static string? SearchAssembly(Assembly assembly, string scriptName)
         {
+            string cacheKey = scriptName;
+
             var allScriptNames = _cache.Get($"TranslateSqlScript:SearchAssembly:{assembly.FullName}") as List<string>;
             if (allScriptNames == null)
             {
-                allScriptNames = assembly.GetManifestResourceNames().Where(o => o.ToLower().EndsWith(".sql"))
+                allScriptNames = assembly.GetManifestResourceNames().Where(o => o.EndsWith(".sql", StringComparison.InvariantCultureIgnoreCase))
                     .Select(o => $":{o}".Replace('.', ':')).ToList();
                 _cache.Add("TranslateSqlScript:Names", allScriptNames, new CacheItemPolicy
                 {
@@ -295,7 +288,7 @@ namespace NTDLS.SqliteDapperWrapper
 
             if (allScriptNames.Count > 0)
             {
-                var script = allScriptNames.Where(o => o.ToLower().EndsWith(cacheKey)).ToList();
+                var script = allScriptNames.Where(o => o.EndsWith(cacheKey, StringComparison.InvariantCultureIgnoreCase)).ToList();
                 if (script.Count > 1)
                 {
                     throw new Exception($"The script name is ambiguous: {cacheKey}.");

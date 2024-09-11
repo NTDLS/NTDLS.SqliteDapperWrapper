@@ -15,12 +15,9 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.SqliteDapperWrapper</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageReleaseNotes>
-      Added function documentation.
-      Change the way scripts are searched to prevent ambiguous lookups.
+      Added ability to specify "folder name" embedded resources.
     </PackageReleaseNotes>
-    <AssemblyVersion>1.1.1</AssemblyVersion>
-    <FileVersion>1.1.1</FileVersion>
-    <VersionPrefix>1.1.1</VersionPrefix>
+    <Version>1.1.2</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>sqlite;dapper;managed;simple;</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -51,8 +48,8 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.35" />
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="8.0.5" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.8" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="8.0.8" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.9" />
     <PackageReference Include="System.Runtime.Caching" Version="8.0.0" />
   </ItemGroup>
 
