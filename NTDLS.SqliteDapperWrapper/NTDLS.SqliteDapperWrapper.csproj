@@ -15,9 +15,9 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.SqliteDapperWrapper</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageReleaseNotes>
-      Added ability to specify "folder name" embedded resources.
+      Dependency updates.
     </PackageReleaseNotes>
-    <Version>1.1.2</Version>
+    <Version>1.1.3</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>sqlite;dapper;managed;simple;</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -48,9 +48,9 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.35" />
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="8.0.8" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.9" />
-    <PackageReference Include="System.Runtime.Caching" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.0" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
+    <PackageReference Include="System.Runtime.Caching" Version="9.0.0" />
   </ItemGroup>
 
 </Project>
