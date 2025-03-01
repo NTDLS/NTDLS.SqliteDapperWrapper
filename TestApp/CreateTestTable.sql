@@ -1,6 +1,7 @@
 ﻿CREATE TABLE IF NOT EXISTS "Test"
 (
     "Id"    INTEGER NOT NULL,
+    "Guid"    Text NOT NULL,
     "Name"  TEXT NOT NULL COLLATE NOCASE,
     "Description"   TEXT NOT NULL,
     CONSTRAINT "PK_Test" PRIMARY KEY("Id" ASC AUTOINCREMENT)

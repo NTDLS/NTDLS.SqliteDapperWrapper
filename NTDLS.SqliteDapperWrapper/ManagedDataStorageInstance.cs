@@ -28,24 +28,25 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Delegate used for ephemeral operations.
         /// </summary>
-        /// <param name="connection"></param>
         public delegate void EphemeralProc(ManagedDataStorageInstance connection);
 
         /// <summary>
         /// Delegate used for ephemeral operations.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="connection"></param>
-        /// <returns></returns>
         public delegate T EphemeralProc<T>(ManagedDataStorageInstance connection);
 
         /// <summary>
         /// Creases a new instance of ManagedDataStorageInstance.
         /// </summary>
-        /// <param name="connectionString"></param>
         public ManagedDataStorageInstance(string connectionString)
         {
             NativeConnection = new SqliteConnection(connectionString);
+
+            if (!SqlMapper.HasTypeHandler(typeof(GuidTypeHandler)))
+                SqlMapper.AddTypeHandler(new GuidTypeHandler());
+
+            if (!SqlMapper.HasTypeHandler(typeof(NullableGuidTypeHandler)))
+                SqlMapper.AddTypeHandler(new NullableGuidTypeHandler());
 
             Directory = Path.GetFullPath(Path.GetDirectoryName(NativeConnection.DataSource) ?? string.Empty);
 
@@ -55,7 +56,6 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Begins an atomic transaction.
         /// </summary>
-        /// <returns></returns>
         public SqliteTransaction BeginTransaction()
         {
             return NativeConnection.BeginTransaction();
@@ -64,8 +64,6 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Begins an atomic transaction.
         /// </summary>
-        /// <param name="isolationLevel"></param>
-        /// <returns></returns>
         public SqliteTransaction BeginTransaction(IsolationLevel isolationLevel)
         {
             return NativeConnection.BeginTransaction(isolationLevel);
@@ -74,10 +72,6 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Creates a temporary table with the given name from an enumerable set of strings. The strings are stored in the column Value.
         /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="values"></param>
-        /// <param name="transaction"></param>
-        /// <returns></returns>
         public DisposableValueListTable CreateTempTableFrom(string tableName, IEnumerable<string> values, SqliteTransaction transaction)
         {
             var result = new DisposableValueListTable(NativeConnection, tableName);
@@ -100,9 +94,6 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Creates a temporary table with the given name from an enumerable set of strings. The strings are stored in the column Value.
         /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="values"></param>
-        /// <returns></returns>
         public DisposableValueListTable CreateTempTableFrom(string tableName, IEnumerable<string> values)
         {
             var result = new DisposableValueListTable(NativeConnection, tableName);
@@ -129,9 +120,6 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Creates a temporary table with the given name from an enumerable set of integers. The integers are stored in the column Value.
         /// </summary>
-        /// <param name="tableName"></param>
-        /// <param name="values"></param>
-        /// <returns></returns>
         public DisposableValueListTable CreateTempTableFrom(string tableName, IEnumerable<int> values)
         {
             var result = new DisposableValueListTable(NativeConnection, tableName);
@@ -158,10 +146,6 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Creates a temporary table with the given name from an enumerable set of values, the temp table schema matches the properties of the given objects.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="tableName"></param>
-        /// <param name="values"></param>
-        /// <returns></returns>
         public DisposableValueListTable CreateTempTableFrom<T>(string tableName, IEnumerable<T> values)
         {
             var result = new DisposableValueListTable(NativeConnection, tableName);
@@ -227,9 +211,6 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Attaches another SQLite database to the current native connection. The attached database is removed when this object is disposed.
         /// </summary>
-        /// <param name="databaseFileName"></param>
-        /// <param name="alias"></param>
-        /// <returns></returns>
         public DisposableAttachment Attach(string databaseFileName, string alias)
         {
             NativeConnection.Execute($"ATTACH DATABASE '{Directory}\\{databaseFileName}' AS {alias};");
@@ -318,182 +299,120 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <returns></returns>
         public IEnumerable<T> Query<T>(string textOrScriptName)
             => NativeConnection.Query<T>(TranslateSqlScript(textOrScriptName));
+
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="param"></param>
-        /// <returns></returns>
         public IEnumerable<T> Query<T>(string textOrScriptName, object param)
             => NativeConnection.Query<T>(TranslateSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="defaultValue"></param>
-        /// <returns></returns>
         public T ExecuteScalar<T>(string textOrScriptName, T defaultValue)
             => NativeConnection.ExecuteScalar<T>(TranslateSqlScript(textOrScriptName)) ?? defaultValue;
+
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="param"></param>
-        /// <param name="defaultValue"></param>
-        /// <returns></returns>
         public T ExecuteScalar<T>(string textOrScriptName, object param, T defaultValue)
             => NativeConnection.ExecuteScalar<T>(TranslateSqlScript(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or throws an exception.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <returns></returns>
         public T QueryFirst<T>(string textOrScriptName)
             => NativeConnection.QueryFirst<T>(TranslateSqlScript(textOrScriptName));
+
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or throws an exception.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="param"></param>
-        /// <returns></returns>
         public T QueryFirst<T>(string textOrScriptName, object param)
             => NativeConnection.QueryFirst<T>(TranslateSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="defaultValue"></param>
-        /// <returns></returns>
         public T QueryFirstOrDefault<T>(string textOrScriptName, T defaultValue)
             => NativeConnection.QueryFirstOrDefault<T>(TranslateSqlScript(textOrScriptName)) ?? defaultValue;
+
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="param"></param>
-        /// <param name="defaultValue"></param>
-        /// <returns></returns>
         public T QueryFirstOrDefault<T>(string textOrScriptName, object param, T defaultValue)
             => NativeConnection.QueryFirstOrDefault<T>(TranslateSqlScript(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or throws an exception.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <returns></returns>
         public T QuerySingle<T>(string textOrScriptName)
             => NativeConnection.QuerySingle<T>(TranslateSqlScript(textOrScriptName));
+
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or throws an exception.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="param"></param>
-        /// <returns></returns>
         public T QuerySingle<T>(string textOrScriptName, object param)
             => NativeConnection.QuerySingle<T>(TranslateSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="defaultValue"></param>
-        /// <returns></returns>
         public T QuerySingleOrDefault<T>(string textOrScriptName, T defaultValue)
             => NativeConnection.QuerySingleOrDefault<T>(TranslateSqlScript(textOrScriptName)) ?? defaultValue;
+
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="param"></param>
-        /// <param name="defaultValue"></param>
-        /// <returns></returns>
         public T QuerySingleOrDefault<T>(string textOrScriptName, object param, T defaultValue)
             => NativeConnection.QuerySingleOrDefault<T>(TranslateSqlScript(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// /// Queries the database using the given script name or SQL text and returns a scalar value throws an exception.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <returns></returns>
         public T? ExecuteScalar<T>(string textOrScriptName)
             => NativeConnection.ExecuteScalar<T>(TranslateSqlScript(textOrScriptName));
+
         /// <summary>
         /// /// Queries the database using the given script name or SQL text and returns a scalar value throws an exception.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="param"></param>
-        /// <returns></returns>
         public T? ExecuteScalar<T>(string textOrScriptName, object param)
             => NativeConnection.ExecuteScalar<T>(TranslateSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <returns></returns>
         public T? QueryFirstOrDefault<T>(string textOrScriptName)
             => NativeConnection.QueryFirstOrDefault<T>(TranslateSqlScript(textOrScriptName));
+
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="param"></param>
-        /// <returns></returns>
         public T? QueryFirstOrDefault<T>(string textOrScriptName, object param)
             => NativeConnection.QueryFirstOrDefault<T>(TranslateSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <returns></returns>
         public T? QuerySingleOrDefault<T>(string textOrScriptName)
             => NativeConnection.QuerySingleOrDefault<T>(TranslateSqlScript(textOrScriptName));
+
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="param"></param>
-        /// <returns></returns>
         public T? QuerySingleOrDefault<T>(string textOrScriptName, object param)
             => NativeConnection.QuerySingleOrDefault<T>(TranslateSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Executes the given script name or SQL text on the database and does not return a result.
         /// </summary>
-        /// <param name="textOrScriptName"></param>
         public void Execute(string textOrScriptName)
             => NativeConnection.Execute(TranslateSqlScript(textOrScriptName));
+
         /// <summary>
         /// Executes the given script name or SQL text on the database and does not return a result.
         /// </summary>
-        /// <param name="textOrScriptName"></param>
-        /// <param name="param"></param>
         public void Execute(string textOrScriptName, object param)
             => NativeConnection.Execute(TranslateSqlScript(textOrScriptName), param);
     }

@@ -29,10 +29,11 @@ namespace TestApp
                 var param = new
                 {
                     Name = $"Name #{i}",
+                    Guid = Guid.NewGuid(),
                     Description = Guid.NewGuid().ToString()
                 };
 
-                MyConnection.Execute("INSERT INTO Test (Name, Description) VALUES (@Name, @Description)", param);
+                MyConnection.Execute("INSERT INTO Test (Name, Guid, Description) VALUES (@Name, @Guid, @Description)", param);
             }
 
             //We can use "Ephemeral" to perform multiple steps on the same connection, such as here where we
@@ -49,10 +50,11 @@ namespace TestApp
                         var param = new
                         {
                             Name = $"Name #{i}",
+                            Guid = Guid.NewGuid(),
                             Description = Guid.NewGuid().ToString()
                         };
 
-                        o.Execute("INSERT INTO Test (Name, Description) VALUES (@Name, @Description)", param);
+                        o.Execute("INSERT INTO Test (Name, Guid, Description) VALUES (@Name, @Guid, @Description)", param);
                     }
 
                     tx.Commit();
@@ -79,7 +81,7 @@ namespace TestApp
                 //Print the results.
                 foreach (var result in results)
                 {
-                    Console.WriteLine($"{result.Id} {result.Name} {result.Description}");
+                    Console.WriteLine($"{result.Id} {result.Guid} {result.Name} {result.Description}");
                 }
             });
 
@@ -90,6 +92,7 @@ namespace TestApp
                 values.Add(new TestParamModel
                 {
                     Name = $"Name #{i}",
+                    Guid = Guid.NewGuid(),
                     Description = Guid.NewGuid().ToString()
                 });
             }
@@ -104,7 +107,7 @@ namespace TestApp
                 using var temp_values = o.CreateTempTableFrom("temp_values", values);
 
                 //Here we are going to insert the data from the temp table called "temp_values".
-                o.Execute("INSERT INTO Test (Name, Description) SELECT Name, Description FROM temp_values");
+                o.Execute("INSERT INTO Test (Name, Guid, Description) SELECT Name, Guid, Description FROM temp_values");
             });
 
 
