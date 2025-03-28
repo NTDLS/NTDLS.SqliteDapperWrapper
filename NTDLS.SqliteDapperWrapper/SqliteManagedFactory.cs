@@ -5,7 +5,7 @@ namespace NTDLS.SqliteDapperWrapper
     /// <summary>
     /// An instance that creates ManagedDataStorageInstances based off of the connection string stored in this class.
     /// </summary>
-    public class ManagedDataStorageFactory
+    public class SqliteManagedFactory
     {
         /// <summary>
         /// The connection string that will be used by the factory, can be set using SetConnectionString().
@@ -15,18 +15,18 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Delegate used for ephemeral operations.
         /// </summary>
-        public delegate void EphemeralProc(ManagedDataStorageInstance connection);
+        public delegate void EphemeralProc(SqliteManagedInstance connection);
 
         /// <summary>
         /// Delegate used for ephemeral operations.
         /// </summary>
 
-        public delegate T EphemeralProc<T>(ManagedDataStorageInstance connection);
+        public delegate T EphemeralProc<T>(SqliteManagedInstance connection);
 
         /// <summary>
         /// Creates a new instance of ManagedDataStorageFactory.
         /// </summary>
-        public ManagedDataStorageFactory(string connectionString)
+        public SqliteManagedFactory(string connectionString)
         {
             DefaultConnectionString = connectionString;
 
@@ -40,7 +40,7 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Creates a new instance of ManagedDataStorageFactory.
         /// </summary>
-        public ManagedDataStorageFactory()
+        public SqliteManagedFactory()
         {
             if (!SqlMapper.HasTypeHandler(typeof(GuidTypeHandler)))
                 SqlMapper.AddTypeHandler(new GuidTypeHandler());
@@ -62,7 +62,7 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public void Ephemeral(EphemeralProc func)
         {
-            using var connection = new ManagedDataStorageInstance(DefaultConnectionString);
+            using var connection = new SqliteManagedInstance(DefaultConnectionString);
             func(connection);
         }
 
@@ -71,7 +71,7 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public T Ephemeral<T>(EphemeralProc<T> func)
         {
-            using var connection = new ManagedDataStorageInstance(DefaultConnectionString);
+            using var connection = new SqliteManagedInstance(DefaultConnectionString);
             return func(connection);
         }
 
@@ -80,7 +80,7 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public void Ephemeral(string connectionString, EphemeralProc func)
         {
-            using var connection = new ManagedDataStorageInstance(connectionString);
+            using var connection = new SqliteManagedInstance(connectionString);
             func(connection);
         }
 
@@ -89,7 +89,7 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public T Ephemeral<T>(string connectionString, EphemeralProc<T> func)
         {
-            using var connection = new ManagedDataStorageInstance(connectionString);
+            using var connection = new SqliteManagedInstance(connectionString);
             return func(connection);
         }
 

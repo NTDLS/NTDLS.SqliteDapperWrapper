@@ -4,8 +4,8 @@ namespace TestApp
 {
     internal class Program
     {
-        public static ManagedDataStorageFactory MyConnection { get; set; } = new("Data Source=.\\databaseFile.db");
-        public static ManagedDataStorageFactory MyOtherDatabase { get; set; } = new("Data Source=.\\otherDatabase.db");
+        public static SqliteManagedFactory MyConnection { get; set; } = new("Data Source=.\\databaseFile.db");
+        public static SqliteManagedFactory MyOtherDatabase { get; set; } = new("Data Source=.\\otherDatabase.db");
 
         static void Main()
         {

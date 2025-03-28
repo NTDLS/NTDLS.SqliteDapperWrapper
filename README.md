@@ -1,16 +1,16 @@
 # NTDLS.SqliteDapperWrapper
 
-📦 Be sure to check out the NuGet pacakge: https://www.nuget.org/packages/NTDLS.SqliteDapperWrapper
+📦 Be sure to check out the NuGet package: https://www.nuget.org/packages/NTDLS.SqliteDapperWrapper
 
 Provides a simple interface to a Sqlite database and allows for more advanced options such as executing
-embedded scripts, passing parameters, parring complext multi-value parameters, attaching databases for
+embedded scripts, passing parameters, parsing complex multi-value parameters, attaching databases for
 inner-database joins, etc. All managed and wrapped in Dapper (hence the name).
 
 
 >**Examples:**
 ```csharp
-public static ManagedDataStorageFactory MyConnection { get; set; } = new("Data Source=.\\databaseFile.db");
-public static ManagedDataStorageFactory MyOtherDatabase { get; set; } = new("Data Source=.\\otherDatabase.db");
+public static SqliteManagedInstance MyConnection { get; set; } = new("Data Source=.\\databaseFile.db");
+public static SqliteManagedInstance MyOtherDatabase { get; set; } = new("Data Source=.\\otherDatabase.db");
 ```
 
 ```csharp

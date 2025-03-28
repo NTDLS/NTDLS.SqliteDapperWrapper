@@ -11,7 +11,7 @@ namespace NTDLS.SqliteDapperWrapper
     /// A disposable database connection wrapper that functions as an ephemeral instance.
     /// One instance of this class is generally created per query.
     /// </summary>
-    public class ManagedDataStorageInstance : IDisposable
+    public class SqliteManagedInstance : IDisposable
     {
         private static readonly MemoryCache _cache = new("ManagedDataStorageInstance");
 
@@ -28,17 +28,17 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Delegate used for ephemeral operations.
         /// </summary>
-        public delegate void EphemeralProc(ManagedDataStorageInstance connection);
+        public delegate void EphemeralProc(SqliteManagedInstance connection);
 
         /// <summary>
         /// Delegate used for ephemeral operations.
         /// </summary>
-        public delegate T EphemeralProc<T>(ManagedDataStorageInstance connection);
+        public delegate T EphemeralProc<T>(SqliteManagedInstance connection);
 
         /// <summary>
         /// Creases a new instance of ManagedDataStorageInstance.
         /// </summary>
-        public ManagedDataStorageInstance(string connectionString)
+        public SqliteManagedInstance(string connectionString)
         {
             NativeConnection = new SqliteConnection(connectionString);
 
@@ -152,7 +152,7 @@ namespace NTDLS.SqliteDapperWrapper
             using var transaction = NativeConnection.BeginTransaction();
 
             // Use reflection to get property names and types of T
-            PropertyInfo[] props = typeof(T).GetProperties();
+            var props = typeof(T).GetProperties();
             var columns = new StringBuilder();
             foreach (var prop in props)
             {
