@@ -1,8 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.Sqlite;
 using System.Data;
-using System.Reflection;
-using System.Runtime.Caching;
 using System.Text;
 
 namespace NTDLS.SqliteDapperWrapper
@@ -13,8 +11,6 @@ namespace NTDLS.SqliteDapperWrapper
     /// </summary>
     public class SqliteManagedInstance : IDisposable
     {
-        private static readonly MemoryCache _cache = new("ManagedDataStorageInstance");
-
         /// <summary>
         /// The directory in which the database resides.
         /// </summary>
@@ -202,6 +198,7 @@ namespace NTDLS.SqliteDapperWrapper
         {
             NativeConnection.Close();
             NativeConnection.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -222,206 +219,127 @@ namespace NTDLS.SqliteDapperWrapper
             return new DisposableAttachment(NativeConnection, alias);
         }
 
-        /// <summary>
-        /// Returns the given text, or if the script ends with ".sql", the script will be
-        /// located and loaded form the executing assembly (assuming it is an embedded resource).
-        /// </summary>
-        public static string TranslateSqlScript(string scriptNameOrText)
-        {
-            string cacheKey = $":{scriptNameOrText.ToLowerInvariant()}".Replace('.', ':').Replace('\\', ':').Replace('/', ':');
-
-            if (cacheKey.EndsWith(":sql", StringComparison.InvariantCultureIgnoreCase))
-            {
-                if (_cache.Get(cacheKey) is string cachedScriptText)
-                {
-                    return cachedScriptText;
-                }
-
-                var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-                foreach (var assembly in assemblies)
-                {
-                    var scriptText = SearchAssembly(assembly, cacheKey);
-                    if (scriptText != null)
-                    {
-                        return scriptText;
-                    }
-                }
-
-                throw new Exception($"The embedded script resource could not be found after enumeration: '{scriptNameOrText}'");
-            }
-
-            return scriptNameOrText;
-        }
-
-        /// <summary>
-        /// Searches the given assembly for a script file.
-        /// </summary>
-        private static string? SearchAssembly(Assembly assembly, string scriptName)
-        {
-            string cacheKey = scriptName;
-
-            var allScriptNames = _cache.Get($"TranslateSqlScript:SearchAssembly:{assembly.FullName}") as List<string>;
-            if (allScriptNames == null)
-            {
-                allScriptNames = assembly.GetManifestResourceNames().Where(o => o.EndsWith(".sql", StringComparison.InvariantCultureIgnoreCase))
-                    .Select(o => $":{o}".Replace('.', ':')).ToList();
-                _cache.Add("TranslateSqlScript:Names", allScriptNames, new CacheItemPolicy
-                {
-                    SlidingExpiration = new TimeSpan(1, 0, 0)
-                });
-            }
-
-            if (allScriptNames.Count > 0)
-            {
-                var script = allScriptNames.Where(o => o.EndsWith(cacheKey, StringComparison.InvariantCultureIgnoreCase)).ToList();
-                if (script.Count > 1)
-                {
-                    throw new Exception($"The script name is ambiguous: {cacheKey}.");
-                }
-                else if (script == null || script.Count == 0)
-                {
-                    return null;
-                }
-
-                using var stream = assembly.GetManifestResourceStream(script.Single().Replace(':', '.').Trim(new char[] { '.' }))
-                    ?? throw new InvalidOperationException("Script not found: " + cacheKey);
-
-                using var reader = new StreamReader(stream);
-                var scriptText = reader.ReadToEnd();
-
-                _cache.Add(cacheKey, allScriptNames, new CacheItemPolicy
-                {
-                    SlidingExpiration = new TimeSpan(1, 0, 0)
-                });
-
-                return scriptText;
-            }
-
-            return null;
-        }
-
         #region Native passthrough.
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
         public IEnumerable<T> Query<T>(string textOrScriptName)
-            => NativeConnection.Query<T>(TranslateSqlScript(textOrScriptName));
+            => NativeConnection.Query<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
         public IEnumerable<T> Query<T>(string textOrScriptName, object param)
-            => NativeConnection.Query<T>(TranslateSqlScript(textOrScriptName), param);
+            => NativeConnection.Query<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
         /// </summary>
         public T ExecuteScalar<T>(string textOrScriptName, T defaultValue)
-            => NativeConnection.ExecuteScalar<T>(TranslateSqlScript(textOrScriptName)) ?? defaultValue;
+            => NativeConnection.ExecuteScalar<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
         /// </summary>
         public T ExecuteScalar<T>(string textOrScriptName, object param, T defaultValue)
-            => NativeConnection.ExecuteScalar<T>(TranslateSqlScript(textOrScriptName), param) ?? defaultValue;
+            => NativeConnection.ExecuteScalar<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or throws an exception.
         /// </summary>
         public T QueryFirst<T>(string textOrScriptName)
-            => NativeConnection.QueryFirst<T>(TranslateSqlScript(textOrScriptName));
+            => NativeConnection.QueryFirst<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or throws an exception.
         /// </summary>
         public T QueryFirst<T>(string textOrScriptName, object param)
-            => NativeConnection.QueryFirst<T>(TranslateSqlScript(textOrScriptName), param);
+            => NativeConnection.QueryFirst<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public T QueryFirstOrDefault<T>(string textOrScriptName, T defaultValue)
-            => NativeConnection.QueryFirstOrDefault<T>(TranslateSqlScript(textOrScriptName)) ?? defaultValue;
+            => NativeConnection.QueryFirstOrDefault<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public T QueryFirstOrDefault<T>(string textOrScriptName, object param, T defaultValue)
-            => NativeConnection.QueryFirstOrDefault<T>(TranslateSqlScript(textOrScriptName), param) ?? defaultValue;
+            => NativeConnection.QueryFirstOrDefault<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or throws an exception.
         /// </summary>
         public T QuerySingle<T>(string textOrScriptName)
-            => NativeConnection.QuerySingle<T>(TranslateSqlScript(textOrScriptName));
+            => NativeConnection.QuerySingle<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or throws an exception.
         /// </summary>
         public T QuerySingle<T>(string textOrScriptName, object param)
-            => NativeConnection.QuerySingle<T>(TranslateSqlScript(textOrScriptName), param);
+            => NativeConnection.QuerySingle<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public T QuerySingleOrDefault<T>(string textOrScriptName, T defaultValue)
-            => NativeConnection.QuerySingleOrDefault<T>(TranslateSqlScript(textOrScriptName)) ?? defaultValue;
+            => NativeConnection.QuerySingleOrDefault<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public T QuerySingleOrDefault<T>(string textOrScriptName, object param, T defaultValue)
-            => NativeConnection.QuerySingleOrDefault<T>(TranslateSqlScript(textOrScriptName), param) ?? defaultValue;
+            => NativeConnection.QuerySingleOrDefault<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// /// Queries the database using the given script name or SQL text and returns a scalar value throws an exception.
         /// </summary>
         public T? ExecuteScalar<T>(string textOrScriptName)
-            => NativeConnection.ExecuteScalar<T>(TranslateSqlScript(textOrScriptName));
+            => NativeConnection.ExecuteScalar<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// /// Queries the database using the given script name or SQL text and returns a scalar value throws an exception.
         /// </summary>
         public T? ExecuteScalar<T>(string textOrScriptName, object param)
-            => NativeConnection.ExecuteScalar<T>(TranslateSqlScript(textOrScriptName), param);
+            => NativeConnection.ExecuteScalar<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public T? QueryFirstOrDefault<T>(string textOrScriptName)
-            => NativeConnection.QueryFirstOrDefault<T>(TranslateSqlScript(textOrScriptName));
+            => NativeConnection.QueryFirstOrDefault<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public T? QueryFirstOrDefault<T>(string textOrScriptName, object param)
-            => NativeConnection.QueryFirstOrDefault<T>(TranslateSqlScript(textOrScriptName), param);
+            => NativeConnection.QueryFirstOrDefault<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public T? QuerySingleOrDefault<T>(string textOrScriptName)
-            => NativeConnection.QuerySingleOrDefault<T>(TranslateSqlScript(textOrScriptName));
+            => NativeConnection.QuerySingleOrDefault<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public T? QuerySingleOrDefault<T>(string textOrScriptName, object param)
-            => NativeConnection.QuerySingleOrDefault<T>(TranslateSqlScript(textOrScriptName), param);
+            => NativeConnection.QuerySingleOrDefault<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Executes the given script name or SQL text on the database and does not return a result.
         /// </summary>
         public void Execute(string textOrScriptName)
-            => NativeConnection.Execute(TranslateSqlScript(textOrScriptName));
+            => NativeConnection.Execute(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Executes the given script name or SQL text on the database and does not return a result.
         /// </summary>
         public void Execute(string textOrScriptName, object param)
-            => NativeConnection.Execute(TranslateSqlScript(textOrScriptName), param);
+            => NativeConnection.Execute(EmbeddedResource.Load(textOrScriptName), param);
 
         #endregion
 
@@ -431,121 +349,121 @@ namespace NTDLS.SqliteDapperWrapper
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
         public async Task<IEnumerable<T>> QueryAsync<T>(string textOrScriptName)
-            => await NativeConnection.QueryAsync<T>(TranslateSqlScript(textOrScriptName));
+            => await NativeConnection.QueryAsync<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
         public async Task<IEnumerable<T>> QueryAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.QueryAsync<T>(TranslateSqlScript(textOrScriptName), param);
+            => await NativeConnection.QueryAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
         /// </summary>
         public async Task<T> ExecuteScalarAsync<T>(string textOrScriptName, T defaultValue)
-            => await NativeConnection.ExecuteScalarAsync<T>(TranslateSqlScript(textOrScriptName)) ?? defaultValue;
+            => await NativeConnection.ExecuteScalarAsync<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
         /// </summary>
         public async Task<T> ExecuteScalarAsync<T>(string textOrScriptName, object param, T defaultValue)
-            => await NativeConnection.ExecuteScalarAsync<T>(TranslateSqlScript(textOrScriptName), param) ?? defaultValue;
+            => await NativeConnection.ExecuteScalarAsync<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or throws an exception.
         /// </summary>
         public async Task<T> QueryFirstAsync<T>(string textOrScriptName)
-            => await NativeConnection.QueryFirstAsync<T>(TranslateSqlScript(textOrScriptName));
+            => await NativeConnection.QueryFirstAsync<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or throws an exception.
         /// </summary>
         public async Task<T> QueryFirstAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.QueryFirstAsync<T>(TranslateSqlScript(textOrScriptName), param);
+            => await NativeConnection.QueryFirstAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public async Task<T> QueryFirstOrDefaultAsync<T>(string textOrScriptName, T defaultValue)
-            => await NativeConnection.QueryFirstOrDefaultAsync<T>(TranslateSqlScript(textOrScriptName)) ?? defaultValue;
+            => await NativeConnection.QueryFirstOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public async Task<T> QueryFirstOrDefaultAsync<T>(string textOrScriptName, object param, T defaultValue)
-            => await NativeConnection.QueryFirstOrDefaultAsync<T>(TranslateSqlScript(textOrScriptName), param) ?? defaultValue;
+            => await NativeConnection.QueryFirstOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or throws an exception.
         /// </summary>
         public async Task<T> QuerySingleAsync<T>(string textOrScriptName)
-            => await NativeConnection.QuerySingleAsync<T>(TranslateSqlScript(textOrScriptName));
+            => await NativeConnection.QuerySingleAsync<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or throws an exception.
         /// </summary>
         public async Task<T> QuerySingleAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.QuerySingleAsync<T>(TranslateSqlScript(textOrScriptName), param);
+            => await NativeConnection.QuerySingleAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public async Task<T> QuerySingleOrDefaultAsync<T>(string textOrScriptName, T defaultValue)
-            => await NativeConnection.QuerySingleOrDefaultAsync<T>(TranslateSqlScript(textOrScriptName)) ?? defaultValue;
+            => await NativeConnection.QuerySingleOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public async Task<T> QuerySingleOrDefaultAsync<T>(string textOrScriptName, object param, T defaultValue)
-            => await NativeConnection.QuerySingleOrDefaultAsync<T>(TranslateSqlScript(textOrScriptName), param) ?? defaultValue;
+            => await NativeConnection.QuerySingleOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// /// Queries the database using the given script name or SQL text and returns a scalar value throws an exception.
         /// </summary>
         public async Task<T?> ExecuteScalarAsync<T>(string textOrScriptName)
-            => await NativeConnection.ExecuteScalarAsync<T>(TranslateSqlScript(textOrScriptName));
+            => await NativeConnection.ExecuteScalarAsync<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// /// Queries the database using the given script name or SQL text and returns a scalar value throws an exception.
         /// </summary>
         public async Task<T?> ExecuteScalarAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.ExecuteScalarAsync<T>(TranslateSqlScript(textOrScriptName), param);
+            => await NativeConnection.ExecuteScalarAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public async Task<T?> QueryFirstOrDefaultAsync<T>(string textOrScriptName)
-            => await NativeConnection.QueryFirstOrDefaultAsync<T>(TranslateSqlScript(textOrScriptName));
+            => await NativeConnection.QueryFirstOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public async Task<T?> QueryFirstOrDefaultAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.QueryFirstOrDefaultAsync<T>(TranslateSqlScript(textOrScriptName), param);
+            => await NativeConnection.QueryFirstOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public async Task<T?> QuerySingleOrDefaultAsync<T>(string textOrScriptName)
-            => await NativeConnection.QuerySingleOrDefaultAsync<T>(TranslateSqlScript(textOrScriptName));
+            => await NativeConnection.QuerySingleOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public async Task<T?> QuerySingleOrDefaultAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.QuerySingleOrDefaultAsync<T>(TranslateSqlScript(textOrScriptName), param);
+            => await NativeConnection.QuerySingleOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
 
         /// <summary>
         /// Executes the given script name or SQL text on the database and does not return a result.
         /// </summary>
         public async Task ExecuteAsync(string textOrScriptName)
-            => await NativeConnection.ExecuteAsync(TranslateSqlScript(textOrScriptName));
+            => await NativeConnection.ExecuteAsync(EmbeddedResource.Load(textOrScriptName));
 
         /// <summary>
         /// Executes the given script name or SQL text on the database and does not return a result.
         /// </summary>
         public async Task ExecuteAsync(string textOrScriptName, object param)
-            => await NativeConnection.ExecuteAsync(TranslateSqlScript(textOrScriptName), param);
+            => await NativeConnection.ExecuteAsync(EmbeddedResource.Load(textOrScriptName), param);
 
         #endregion
 
