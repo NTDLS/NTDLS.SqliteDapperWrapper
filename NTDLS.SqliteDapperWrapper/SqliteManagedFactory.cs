@@ -37,6 +37,11 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public SqliteManagedFactory(string connectionString)
         {
+            if (!connectionString.StartsWith("Data Source", StringComparison.InvariantCultureIgnoreCase))
+            {
+                connectionString = @$"Data Source={connectionString}";
+            }
+
             DefaultConnectionString = connectionString;
 
             if (!SqlMapper.HasTypeHandler(typeof(GuidTypeHandler)))
@@ -63,6 +68,11 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public void SetConnectionString(string? connectionString)
         {
+            if (connectionString != null && !connectionString.StartsWith("Data Source", StringComparison.InvariantCultureIgnoreCase))
+            {
+                connectionString = @$"Data Source={connectionString}";
+            }
+
             DefaultConnectionString = connectionString ?? string.Empty;
         }
 
@@ -125,13 +135,13 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
-        public IEnumerable<T> Query<T>(string scriptName)
+        public List<T> Query<T>(string scriptName)
             => Ephemeral(DefaultConnectionString, o => o.Query<T>(scriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
-        public IEnumerable<T> Query<T>(string scriptName, object param)
+        public List<T> Query<T>(string scriptName, object param)
             => Ephemeral(DefaultConnectionString, o => o.Query<T>(scriptName, param));
 
         /// <summary>
@@ -249,13 +259,13 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
-        public async Task<IEnumerable<T>> QueryAsync<T>(string scriptName)
+        public async Task<List<T>> QueryAsync<T>(string scriptName)
             => await Ephemeral(DefaultConnectionString, async o => await o.QueryAsync<T>(scriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
-        public async Task<IEnumerable<T>> QueryAsync<T>(string scriptName, object param)
+        public async Task<List<T>> QueryAsync<T>(string scriptName, object param)
             => await Ephemeral(DefaultConnectionString, async o => await o.QueryAsync<T>(scriptName, param));
 
         /// <summary>
@@ -376,9 +386,9 @@ namespace NTDLS.SqliteDapperWrapper
         /// <remarks>This method queries the SQLite system table `sqlite_master` to retrieve metadata
         /// about all tables in the database. The returned collection includes information such as table names and
         /// schema details.</remarks>
-        /// <returns>An <see cref="IEnumerable{T}"/> containing <see cref="TableInfo"/> objects that represent the tables in the
+        /// <returns>An <see cref="List{T}"/> containing <see cref="TableInfo"/> objects that represent the tables in the
         /// SQLite database. Returns an empty collection if no tables are found.</returns>
-        public IEnumerable<TableInfo> GetTables()
+        public List<TableInfo> GetTables()
             => Ephemeral(DefaultConnectionString, o => o.GetTables());
 
         /// <summary>
@@ -388,9 +398,9 @@ namespace NTDLS.SqliteDapperWrapper
         /// about indexes associated with the specified table. The returned collection includes details such as the
         /// index name, type, associated table name, root page, and SQL definition.</remarks>
         /// <param name="tableName">The name of the table for which to retrieve index information.</param>
-        /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="IndexInfo"/> objects, where each object represents an index
+        /// <returns>An <see cref="List{T}"/> of <see cref="IndexInfo"/> objects, where each object represents an index
         /// associated with the specified table. Returns an empty collection if no indexes are found.</returns>
-        public IEnumerable<IndexInfo> GetIndexes(string tableName)
+        public List<IndexInfo> GetIndexes(string tableName)
             => Ephemeral(DefaultConnectionString, o => o.GetIndexes(tableName));
 
         /// <summary>
@@ -399,9 +409,9 @@ namespace NTDLS.SqliteDapperWrapper
         /// <remarks>This method queries the SQLite system table <c>sqlite_master</c> to retrieve
         /// information about all indexes defined in the database. The returned collection includes details such as the
         /// index name, associated table name, root page, and SQL definition.</remarks>
-        /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="IndexInfo"/> objects, where each object represents metadata
+        /// <returns>An <see cref="List{T}"/> of <see cref="IndexInfo"/> objects, where each object represents metadata
         /// about an index in the SQLite database.</returns>
-        public IEnumerable<IndexInfo> GetIndexes()
+        public List<IndexInfo> GetIndexes()
             => Ephemeral(DefaultConnectionString, o => o.GetIndexes());
 
         /// <summary>
@@ -410,10 +420,10 @@ namespace NTDLS.SqliteDapperWrapper
         /// <remarks>This method queries the SQLite database to retrieve column-level schema information for the specified table.
         /// The schema details are extracted using the SQLite `PRAGMA table_info` command.</remarks>
         /// <param name="tableName">The name of the table for which to retrieve schema information. Cannot be null or empty.</param>
-        /// <returns>An <see cref="IEnumerable{TableSchemaInfo}"/> containing schema details for the specified table. Each <see
+        /// <returns>An <see cref="List{TableSchemaInfo}"/> containing schema details for the specified table. Each <see
         /// cref="TableSchemaInfo"/> object represents a column in the table, including its name, type, constraints, and
         /// whether it is part of the primary key.</returns>
-        public IEnumerable<TableSchemaInfo> GetTableSchema(string tableName)
+        public List<TableSchemaInfo> GetTableSchema(string tableName)
             => Ephemeral(DefaultConnectionString, o => o.GetTableSchema(tableName));
 
         /// <summary>

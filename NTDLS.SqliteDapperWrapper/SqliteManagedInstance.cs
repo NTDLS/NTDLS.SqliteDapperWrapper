@@ -36,6 +36,11 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public SqliteManagedInstance(string connectionString)
         {
+            if(!connectionString.StartsWith("Data Source", StringComparison.InvariantCultureIgnoreCase))
+            {
+                connectionString = @$"Data Source={connectionString}";
+            }
+
             NativeConnection = new SqliteConnection(connectionString);
 
             if (!SqlMapper.HasTypeHandler(typeof(GuidTypeHandler)))
@@ -68,10 +73,10 @@ namespace NTDLS.SqliteDapperWrapper
         {
             var result = new DisposableValueListTable(NativeConnection, tableName);
 
-            var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
+            using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
             createTempTableCommand.ExecuteNonQuery();
 
-            var insertTagCommand = new SqliteCommand($"INSERT INTO {tableName} (Value) VALUES (@Tag);", NativeConnection, transaction);
+            using var insertTagCommand = new SqliteCommand($"INSERT INTO {tableName} (Value) VALUES (@Tag);", NativeConnection, transaction);
 
             foreach (var tag in values)
             {
@@ -92,10 +97,10 @@ namespace NTDLS.SqliteDapperWrapper
 
             using var transaction = NativeConnection.BeginTransaction();
 
-            var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
+            using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
             createTempTableCommand.ExecuteNonQuery();
 
-            var insertTagCommand = new SqliteCommand($"INSERT INTO {tableName} (Value) VALUES (@Tag);", NativeConnection, transaction);
+            using var insertTagCommand = new SqliteCommand($"INSERT INTO {tableName} (Value) VALUES (@Tag);", NativeConnection, transaction);
 
             foreach (var tag in values)
             {
@@ -118,10 +123,10 @@ namespace NTDLS.SqliteDapperWrapper
 
             using var transaction = NativeConnection.BeginTransaction();
 
-            var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
+            using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
             createTempTableCommand.ExecuteNonQuery();
 
-            var insertTagCommand = new SqliteCommand($"INSERT INTO {tableName} (Value) VALUES (@Tag);", NativeConnection, transaction);
+            using var insertTagCommand = new SqliteCommand($"INSERT INTO {tableName} (Value) VALUES (@Tag);", NativeConnection, transaction);
 
             foreach (var tag in values)
             {
@@ -158,7 +163,7 @@ namespace NTDLS.SqliteDapperWrapper
             columns.Length--;
 
             // Create the temporary table with dynamic columns
-            var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} ({columns});", NativeConnection, transaction);
+            using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} ({columns});", NativeConnection, transaction);
             createTempTableCommand.ExecuteNonQuery();
 
             // Prepare the insert command
@@ -173,7 +178,7 @@ namespace NTDLS.SqliteDapperWrapper
             valuePlaceholders.Length--;
 
             var insertCommandText = $"INSERT INTO {tableName} ({columnNames}) VALUES ({valuePlaceholders});";
-            var insertCommand = new SqliteCommand(insertCommandText, NativeConnection, transaction);
+            using var insertCommand = new SqliteCommand(insertCommandText, NativeConnection, transaction);
 
             // Insert all values
             foreach (var item in values)
@@ -224,14 +229,14 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
-        public IEnumerable<T> Query<T>(string textOrScriptName)
-            => NativeConnection.Query<T>(EmbeddedResource.Load(textOrScriptName));
+        public List<T> Query<T>(string textOrScriptName)
+            => NativeConnection.Query<T>(EmbeddedResource.Load(textOrScriptName), buffered: true).ToList();
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
-        public IEnumerable<T> Query<T>(string textOrScriptName, object param)
-            => NativeConnection.Query<T>(EmbeddedResource.Load(textOrScriptName), param);
+        public List<T> Query<T>(string textOrScriptName, object param)
+            => NativeConnection.Query<T>(EmbeddedResource.Load(textOrScriptName), param, buffered: true).ToList();
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
@@ -348,14 +353,20 @@ namespace NTDLS.SqliteDapperWrapper
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
-        public async Task<IEnumerable<T>> QueryAsync<T>(string textOrScriptName)
-            => await NativeConnection.QueryAsync<T>(EmbeddedResource.Load(textOrScriptName));
+        public async Task<List<T>> QueryAsync<T>(string textOrScriptName)
+        {
+            var result = await NativeConnection.QueryAsync<T>(EmbeddedResource.Load(textOrScriptName));
+            return result.AsList();
+        }
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
-        public async Task<IEnumerable<T>> QueryAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.QueryAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
+        public async Task<List<T>> QueryAsync<T>(string textOrScriptName, object param)
+        {
+            var result = await NativeConnection.QueryAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
+            return result.AsList();
+        }
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
@@ -475,10 +486,10 @@ namespace NTDLS.SqliteDapperWrapper
         /// <remarks>This method queries the SQLite system table `sqlite_master` to retrieve metadata
         /// about all tables in the database. The returned collection includes information such as table names and
         /// schema details.</remarks>
-        /// <returns>An <see cref="IEnumerable{T}"/> containing <see cref="TableInfo"/> objects that represent the tables in the
+        /// <returns>An <see cref="List{T}"/> containing <see cref="TableInfo"/> objects that represent the tables in the
         /// SQLite database. Returns an empty collection if no tables are found.</returns>
-        public IEnumerable<TableInfo> GetTables()
-            => Query<TableInfo>("SELECT * FROM sqlite_master WHERE type = 'table'");
+        public List<TableInfo> GetTables()
+            => Query<TableInfo>("SELECT * FROM sqlite_master WHERE type = 'table'").ToList();
 
         /// <summary>
         /// Retrieves a collection of index information for the specified table in a SQLite database.
@@ -487,9 +498,9 @@ namespace NTDLS.SqliteDapperWrapper
         /// about indexes associated with the specified table. The returned collection includes details such as the
         /// index name, type, associated table name, root page, and SQL definition.</remarks>
         /// <param name="tableName">The name of the table for which to retrieve index information.</param>
-        /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="IndexInfo"/> objects, where each object represents an index
+        /// <returns>An <see cref="List{T}"/> of <see cref="IndexInfo"/> objects, where each object represents an index
         /// associated with the specified table. Returns an empty collection if no indexes are found.</returns>
-        public IEnumerable<IndexInfo> GetIndexes(string tableName)
+        public List<IndexInfo> GetIndexes(string tableName)
         {
             var model = Query<IndexInfoModel>("SELECT * FROM sqlite_master WHERE type = 'index' AND tbl_name = @TableName",
                 new { TableName = tableName });
@@ -501,7 +512,7 @@ namespace NTDLS.SqliteDapperWrapper
                 TableName = o.Tbl_Name,
                 RootPage = o.RootPage,
                 SQL = o.SQL
-            });
+            }).ToList();
         }
 
         /// <summary>
@@ -510,9 +521,9 @@ namespace NTDLS.SqliteDapperWrapper
         /// <remarks>This method queries the SQLite system table <c>sqlite_master</c> to retrieve
         /// information about all indexes defined in the database. The returned collection includes details such as the
         /// index name, associated table name, root page, and SQL definition.</remarks>
-        /// <returns>An <see cref="IEnumerable{T}"/> of <see cref="IndexInfo"/> objects, where each object represents metadata
+        /// <returns>An <see cref="List{T}"/> of <see cref="IndexInfo"/> objects, where each object represents metadata
         /// about an index in the SQLite database.</returns>
-        public IEnumerable<IndexInfo> GetIndexes()
+        public List<IndexInfo> GetIndexes()
         {
             var model = Query<IndexInfoModel>("SELECT * FROM sqlite_master WHERE type = 'index'");
             return model.Select(o => new IndexInfo
@@ -522,7 +533,7 @@ namespace NTDLS.SqliteDapperWrapper
                 TableName = o.Tbl_Name,
                 RootPage = o.RootPage,
                 SQL = o.SQL
-            });
+            }).ToList();
         }
 
         /// <summary>
@@ -531,10 +542,10 @@ namespace NTDLS.SqliteDapperWrapper
         /// <remarks>This method queries the SQLite database to retrieve column-level schema information for the specified table.
         /// The schema details are extracted using the SQLite `PRAGMA table_info` command.</remarks>
         /// <param name="tableName">The name of the table for which to retrieve schema information. Cannot be null or empty.</param>
-        /// <returns>An <see cref="IEnumerable{TableSchemaInfo}"/> containing schema details for the specified table. Each <see
+        /// <returns>An <see cref="List{TableSchemaInfo}"/> containing schema details for the specified table. Each <see
         /// cref="TableSchemaInfo"/> object represents a column in the table, including its name, type, constraints, and
         /// whether it is part of the primary key.</returns>
-        public IEnumerable<TableSchemaInfo> GetTableSchema(string tableName)
+        public List<TableSchemaInfo> GetTableSchema(string tableName)
         {
             var model = Query<TableSchemaInfoModel>($"PRAGMA table_info([{tableName}])");
             return model.Select(o => new TableSchemaInfo
@@ -545,7 +556,7 @@ namespace NTDLS.SqliteDapperWrapper
                 IsNotNull = o.NotNull,
                 DefaultValue = o.Dflt_Value,
                 IsPrimaryKey = o.PK
-            });
+            }).ToList();
         }
 
         /// <summary>
