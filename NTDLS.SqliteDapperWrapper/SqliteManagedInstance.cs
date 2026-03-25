@@ -36,7 +36,7 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public SqliteManagedInstance(string connectionString)
         {
-            if(!connectionString.StartsWith("Data Source", StringComparison.InvariantCultureIgnoreCase))
+            if (!connectionString.StartsWith("Data Source", StringComparison.InvariantCultureIgnoreCase))
             {
                 connectionString = @$"Data Source={connectionString}";
             }
@@ -71,8 +71,6 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public DisposableValueListTable CreateTempTableFrom(string tableName, IEnumerable<string> values, SqliteTransaction transaction)
         {
-            var result = new DisposableValueListTable(NativeConnection, tableName);
-
             using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
             createTempTableCommand.ExecuteNonQuery();
 
@@ -85,7 +83,7 @@ namespace NTDLS.SqliteDapperWrapper
                 insertTagCommand.ExecuteNonQuery();
             }
 
-            return result;
+            return new DisposableValueListTable(NativeConnection, tableName);
         }
 
         /// <summary>
@@ -93,25 +91,31 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public DisposableValueListTable CreateTempTableFrom(string tableName, IEnumerable<string> values)
         {
-            var result = new DisposableValueListTable(NativeConnection, tableName);
-
             using var transaction = NativeConnection.BeginTransaction();
-
-            using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
-            createTempTableCommand.ExecuteNonQuery();
-
-            using var insertTagCommand = new SqliteCommand($"INSERT INTO {tableName} (Value) VALUES (@Tag);", NativeConnection, transaction);
-
-            foreach (var tag in values)
+            try
             {
-                insertTagCommand.Parameters.Clear();
-                insertTagCommand.Parameters.AddWithValue("@Tag", tag);
-                insertTagCommand.ExecuteNonQuery();
+
+                using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
+                createTempTableCommand.ExecuteNonQuery();
+
+                using var insertTagCommand = new SqliteCommand($"INSERT INTO {tableName} (Value) VALUES (@Tag);", NativeConnection, transaction);
+
+                foreach (var tag in values)
+                {
+                    insertTagCommand.Parameters.Clear();
+                    insertTagCommand.Parameters.AddWithValue("@Tag", tag);
+                    insertTagCommand.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
             }
 
-            transaction.Commit();
-
-            return result;
+            return new DisposableValueListTable(NativeConnection, tableName);
         }
 
         /// <summary>
@@ -119,25 +123,30 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public DisposableValueListTable CreateTempTableFrom(string tableName, IEnumerable<int> values)
         {
-            var result = new DisposableValueListTable(NativeConnection, tableName);
-
             using var transaction = NativeConnection.BeginTransaction();
-
-            using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
-            createTempTableCommand.ExecuteNonQuery();
-
-            using var insertTagCommand = new SqliteCommand($"INSERT INTO {tableName} (Value) VALUES (@Tag);", NativeConnection, transaction);
-
-            foreach (var tag in values)
+            try
             {
-                insertTagCommand.Parameters.Clear();
-                insertTagCommand.Parameters.AddWithValue("@Tag", tag);
-                insertTagCommand.ExecuteNonQuery();
+                using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} (Value TEXT COLLATE NOCASE);", NativeConnection, transaction);
+                createTempTableCommand.ExecuteNonQuery();
+
+                using var insertTagCommand = new SqliteCommand($"INSERT INTO {tableName} (Value) VALUES (@Tag);", NativeConnection, transaction);
+
+                foreach (var tag in values)
+                {
+                    insertTagCommand.Parameters.Clear();
+                    insertTagCommand.Parameters.AddWithValue("@Tag", tag);
+                    insertTagCommand.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
             }
 
-            transaction.Commit();
-
-            return result;
+            return new DisposableValueListTable(NativeConnection, tableName);
         }
 
         /// <summary>
@@ -145,55 +154,61 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public DisposableValueListTable CreateTempTableFrom<T>(string tableName, IEnumerable<T> values)
         {
-            var result = new DisposableValueListTable(NativeConnection, tableName);
             using var transaction = NativeConnection.BeginTransaction();
-
-            // Use reflection to get property names and types of T
-            var props = typeof(T).GetProperties();
-            var columns = new StringBuilder();
-            foreach (var prop in props)
+            try
             {
-                // Creating columns for each property of the class
-                // This example assumes all properties are of type string for simplicity
-                // Adjust the type based on your specific needs or data types
-                columns.Append($"{prop.Name} TEXT COLLATE NOCASE,");
-            }
-
-            // Remove the last comma
-            columns.Length--;
-
-            // Create the temporary table with dynamic columns
-            using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} ({columns});", NativeConnection, transaction);
-            createTempTableCommand.ExecuteNonQuery();
-
-            // Prepare the insert command
-            var columnNames = new StringBuilder();
-            var valuePlaceholders = new StringBuilder();
-            foreach (var prop in props)
-            {
-                columnNames.Append($"{prop.Name},");
-                valuePlaceholders.Append($"@{prop.Name},");
-            }
-            columnNames.Length--;
-            valuePlaceholders.Length--;
-
-            var insertCommandText = $"INSERT INTO {tableName} ({columnNames}) VALUES ({valuePlaceholders});";
-            using var insertCommand = new SqliteCommand(insertCommandText, NativeConnection, transaction);
-
-            // Insert all values
-            foreach (var item in values)
-            {
-                insertCommand.Parameters.Clear();
+                // Use reflection to get property names and types of T
+                var props = typeof(T).GetProperties();
+                var columns = new StringBuilder();
                 foreach (var prop in props)
                 {
-                    var val = prop.GetValue(item);
-                    insertCommand.Parameters.AddWithValue($"@{prop.Name}", val ?? DBNull.Value); // Handle NULL values
+                    // Creating columns for each property of the class
+                    // This example assumes all properties are of type string for simplicity
+                    // Adjust the type based on your specific needs or data types
+                    columns.Append($"{prop.Name} TEXT COLLATE NOCASE,");
                 }
-                insertCommand.ExecuteNonQuery();
-            }
 
-            transaction.Commit();
-            return result;
+                // Remove the last comma
+                columns.Length--;
+
+                // Create the temporary table with dynamic columns
+                using var createTempTableCommand = new SqliteCommand($"CREATE TEMP TABLE {tableName} ({columns});", NativeConnection, transaction);
+                createTempTableCommand.ExecuteNonQuery();
+
+                // Prepare the insert command
+                var columnNames = new StringBuilder();
+                var valuePlaceholders = new StringBuilder();
+                foreach (var prop in props)
+                {
+                    columnNames.Append($"{prop.Name},");
+                    valuePlaceholders.Append($"@{prop.Name},");
+                }
+                columnNames.Length--;
+                valuePlaceholders.Length--;
+
+                var insertCommandText = $"INSERT INTO {tableName} ({columnNames}) VALUES ({valuePlaceholders});";
+                using var insertCommand = new SqliteCommand(insertCommandText, NativeConnection, transaction);
+
+                // Insert all values
+                foreach (var item in values)
+                {
+                    insertCommand.Parameters.Clear();
+                    foreach (var prop in props)
+                    {
+                        var val = prop.GetValue(item);
+                        insertCommand.Parameters.AddWithValue($"@{prop.Name}", val ?? DBNull.Value); // Handle NULL values
+                    }
+                    insertCommand.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+            return new DisposableValueListTable(NativeConnection, tableName);
         }
 
         /// <summary>

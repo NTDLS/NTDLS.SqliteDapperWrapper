@@ -10,14 +10,14 @@
     <Nullable>Enable</Nullable>
     <Company>NetworkDLS</Company>
     <Description>Provides a simple interface to a Sqlite database and allows for more advanced options.</Description>
-    <Copyright>Copyright © 2025 NetworkDLS</Copyright>
+    <Copyright>Copyright © 2026 NetworkDLS</Copyright>
     <PackageProjectUrl>https://github.com/NTDLS/NTDLS.SqliteDapperWrapper</PackageProjectUrl>
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.SqliteDapperWrapper</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageReleaseNotes>
-		Fixed leaking ienumerable and added more options for the connection string.
+		Fixed delayed transaction rollback on exception.
 	</PackageReleaseNotes>
-    <Version>1.4.0</Version>
+    <Version>1.4.1</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>sqlite;dapper;managed;simple;</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
