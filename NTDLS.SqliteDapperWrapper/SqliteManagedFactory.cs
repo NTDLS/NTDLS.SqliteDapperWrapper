@@ -104,6 +104,15 @@ namespace NTDLS.SqliteDapperWrapper
         }
 
         /// <summary>
+        /// Instantiates/opens a SQL connection using the default connection string, executes the given delegate and then closed/disposes the connection.
+        /// </summary>
+        public async Task<T> EphemeralAsync<T>(EphemeralProcAsync<T> func)
+        {
+            using var connection = new SqliteManagedInstance(DefaultConnectionString);
+            return await func(connection);
+        }
+
+        /// <summary>
         /// Instantiates/opens a SQL connection using the given connection string, executes the given delegate and then closed/disposes the connection.
         /// </summary>
         public void Ephemeral(string connectionString, EphemeralProc func)
@@ -128,6 +137,15 @@ namespace NTDLS.SqliteDapperWrapper
         {
             using var connection = new SqliteManagedInstance(connectionString);
             return func(connection);
+        }
+
+        /// <summary>
+        /// Instantiates/opens a SQL connection using the given connection string, executes the given delegate and then closed/disposes the connection.
+        /// </summary>
+        public async Task<T> EphemeralAsync<T>(string connectionString, EphemeralProcAsync<T> func)
+        {
+            using var connection = new SqliteManagedInstance(connectionString);
+            return await func(connection);
         }
 
         #region SqliteManagedInstance passthroughs.

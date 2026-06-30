@@ -245,121 +245,121 @@ namespace NTDLS.SqliteDapperWrapper
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
         public List<T> Query<T>(string textOrScriptName)
-            => NativeConnection.Query<T>(EmbeddedResource.Load(textOrScriptName), buffered: true).ToList();
+            => NativeConnection.Query<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), buffered: true).ToList();
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the results.
         /// </summary>
         public List<T> Query<T>(string textOrScriptName, object param)
-            => NativeConnection.Query<T>(EmbeddedResource.Load(textOrScriptName), param, buffered: true).ToList();
+            => NativeConnection.Query<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param, buffered: true).ToList();
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
         /// </summary>
         public T ExecuteScalar<T>(string textOrScriptName, T defaultValue)
-            => NativeConnection.ExecuteScalar<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
+            => NativeConnection.ExecuteScalar<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
         /// </summary>
         public T ExecuteScalar<T>(string textOrScriptName, object param, T defaultValue)
-            => NativeConnection.ExecuteScalar<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
+            => NativeConnection.ExecuteScalar<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or throws an exception.
         /// </summary>
         public T QueryFirst<T>(string textOrScriptName)
-            => NativeConnection.QueryFirst<T>(EmbeddedResource.Load(textOrScriptName));
+            => NativeConnection.QueryFirst<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or throws an exception.
         /// </summary>
         public T QueryFirst<T>(string textOrScriptName, object param)
-            => NativeConnection.QueryFirst<T>(EmbeddedResource.Load(textOrScriptName), param);
+            => NativeConnection.QueryFirst<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public T QueryFirstOrDefault<T>(string textOrScriptName, T defaultValue)
-            => NativeConnection.QueryFirstOrDefault<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
+            => NativeConnection.QueryFirstOrDefault<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public T QueryFirstOrDefault<T>(string textOrScriptName, object param, T defaultValue)
-            => NativeConnection.QueryFirstOrDefault<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
+            => NativeConnection.QueryFirstOrDefault<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or throws an exception.
         /// </summary>
         public T QuerySingle<T>(string textOrScriptName)
-            => NativeConnection.QuerySingle<T>(EmbeddedResource.Load(textOrScriptName));
+            => NativeConnection.QuerySingle<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or throws an exception.
         /// </summary>
         public T QuerySingle<T>(string textOrScriptName, object param)
-            => NativeConnection.QuerySingle<T>(EmbeddedResource.Load(textOrScriptName), param);
+            => NativeConnection.QuerySingle<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public T QuerySingleOrDefault<T>(string textOrScriptName, T defaultValue)
-            => NativeConnection.QuerySingleOrDefault<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
+            => NativeConnection.QuerySingleOrDefault<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public T QuerySingleOrDefault<T>(string textOrScriptName, object param, T defaultValue)
-            => NativeConnection.QuerySingleOrDefault<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
+            => NativeConnection.QuerySingleOrDefault<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// /// Queries the database using the given script name or SQL text and returns a scalar value throws an exception.
         /// </summary>
         public T? ExecuteScalar<T>(string textOrScriptName)
-            => NativeConnection.ExecuteScalar<T>(EmbeddedResource.Load(textOrScriptName));
+            => NativeConnection.ExecuteScalar<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// /// Queries the database using the given script name or SQL text and returns a scalar value throws an exception.
         /// </summary>
         public T? ExecuteScalar<T>(string textOrScriptName, object param)
-            => NativeConnection.ExecuteScalar<T>(EmbeddedResource.Load(textOrScriptName), param);
+            => NativeConnection.ExecuteScalar<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public T? QueryFirstOrDefault<T>(string textOrScriptName)
-            => NativeConnection.QueryFirstOrDefault<T>(EmbeddedResource.Load(textOrScriptName));
+            => NativeConnection.QueryFirstOrDefault<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public T? QueryFirstOrDefault<T>(string textOrScriptName, object param)
-            => NativeConnection.QueryFirstOrDefault<T>(EmbeddedResource.Load(textOrScriptName), param);
+            => NativeConnection.QueryFirstOrDefault<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public T? QuerySingleOrDefault<T>(string textOrScriptName)
-            => NativeConnection.QuerySingleOrDefault<T>(EmbeddedResource.Load(textOrScriptName));
+            => NativeConnection.QuerySingleOrDefault<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public T? QuerySingleOrDefault<T>(string textOrScriptName, object param)
-            => NativeConnection.QuerySingleOrDefault<T>(EmbeddedResource.Load(textOrScriptName), param);
+            => NativeConnection.QuerySingleOrDefault<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Executes the given script name or SQL text on the database and does not return a result.
         /// </summary>
         public void Execute(string textOrScriptName)
-            => NativeConnection.Execute(EmbeddedResource.Load(textOrScriptName));
+            => NativeConnection.Execute(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// Executes the given script name or SQL text on the database and does not return a result.
         /// </summary>
         public void Execute(string textOrScriptName, object param)
-            => NativeConnection.Execute(EmbeddedResource.Load(textOrScriptName), param);
+            => NativeConnection.Execute(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         #endregion
 
@@ -370,7 +370,7 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public async Task<List<T>> QueryAsync<T>(string textOrScriptName)
         {
-            var result = await NativeConnection.QueryAsync<T>(EmbeddedResource.Load(textOrScriptName));
+            var result = await NativeConnection.QueryAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
             return result.AsList();
         }
 
@@ -379,7 +379,7 @@ namespace NTDLS.SqliteDapperWrapper
         /// </summary>
         public async Task<List<T>> QueryAsync<T>(string textOrScriptName, object param)
         {
-            var result = await NativeConnection.QueryAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
+            var result = await NativeConnection.QueryAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
             return result.AsList();
         }
 
@@ -387,109 +387,109 @@ namespace NTDLS.SqliteDapperWrapper
         /// Queries the database using the given script name or SQL text and returns the scalar result.
         /// </summary>
         public async Task<T> ExecuteScalarAsync<T>(string textOrScriptName, T defaultValue)
-            => await NativeConnection.ExecuteScalarAsync<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
+            => await NativeConnection.ExecuteScalarAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the scalar result.
         /// </summary>
         public async Task<T> ExecuteScalarAsync<T>(string textOrScriptName, object param, T defaultValue)
-            => await NativeConnection.ExecuteScalarAsync<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
+            => await NativeConnection.ExecuteScalarAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or throws an exception.
         /// </summary>
         public async Task<T> QueryFirstAsync<T>(string textOrScriptName)
-            => await NativeConnection.QueryFirstAsync<T>(EmbeddedResource.Load(textOrScriptName));
+            => await NativeConnection.QueryFirstAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or throws an exception.
         /// </summary>
         public async Task<T> QueryFirstAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.QueryFirstAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
+            => await NativeConnection.QueryFirstAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public async Task<T> QueryFirstOrDefaultAsync<T>(string textOrScriptName, T defaultValue)
-            => await NativeConnection.QueryFirstOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
+            => await NativeConnection.QueryFirstOrDefaultAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public async Task<T> QueryFirstOrDefaultAsync<T>(string textOrScriptName, object param, T defaultValue)
-            => await NativeConnection.QueryFirstOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
+            => await NativeConnection.QueryFirstOrDefaultAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or throws an exception.
         /// </summary>
         public async Task<T> QuerySingleAsync<T>(string textOrScriptName)
-            => await NativeConnection.QuerySingleAsync<T>(EmbeddedResource.Load(textOrScriptName));
+            => await NativeConnection.QuerySingleAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or throws an exception.
         /// </summary>
         public async Task<T> QuerySingleAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.QuerySingleAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
+            => await NativeConnection.QuerySingleAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public async Task<T> QuerySingleOrDefaultAsync<T>(string textOrScriptName, T defaultValue)
-            => await NativeConnection.QuerySingleOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName)) ?? defaultValue;
+            => await NativeConnection.QuerySingleOrDefaultAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName)) ?? defaultValue;
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public async Task<T> QuerySingleOrDefaultAsync<T>(string textOrScriptName, object param, T defaultValue)
-            => await NativeConnection.QuerySingleOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName), param) ?? defaultValue;
+            => await NativeConnection.QuerySingleOrDefaultAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param) ?? defaultValue;
 
         /// <summary>
         /// /// Queries the database using the given script name or SQL text and returns a scalar value throws an exception.
         /// </summary>
         public async Task<T?> ExecuteScalarAsync<T>(string textOrScriptName)
-            => await NativeConnection.ExecuteScalarAsync<T>(EmbeddedResource.Load(textOrScriptName));
+            => await NativeConnection.ExecuteScalarAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// /// Queries the database using the given script name or SQL text and returns a scalar value throws an exception.
         /// </summary>
         public async Task<T?> ExecuteScalarAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.ExecuteScalarAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
+            => await NativeConnection.ExecuteScalarAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public async Task<T?> QueryFirstOrDefaultAsync<T>(string textOrScriptName)
-            => await NativeConnection.QueryFirstOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName));
+            => await NativeConnection.QueryFirstOrDefaultAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns the first result or a default value.
         /// </summary>
         public async Task<T?> QueryFirstOrDefaultAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.QueryFirstOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
+            => await NativeConnection.QueryFirstOrDefaultAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public async Task<T?> QuerySingleOrDefaultAsync<T>(string textOrScriptName)
-            => await NativeConnection.QuerySingleOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName));
+            => await NativeConnection.QuerySingleOrDefaultAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// Queries the database using the given script name or SQL text and returns a single value or a default.
         /// </summary>
         public async Task<T?> QuerySingleOrDefaultAsync<T>(string textOrScriptName, object param)
-            => await NativeConnection.QuerySingleOrDefaultAsync<T>(EmbeddedResource.Load(textOrScriptName), param);
+            => await NativeConnection.QuerySingleOrDefaultAsync<T>(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         /// <summary>
         /// Executes the given script name or SQL text on the database and does not return a result.
         /// </summary>
         public async Task ExecuteAsync(string textOrScriptName)
-            => await NativeConnection.ExecuteAsync(EmbeddedResource.Load(textOrScriptName));
+            => await NativeConnection.ExecuteAsync(SqlScriptLoader.LoadSqlScript(textOrScriptName));
 
         /// <summary>
         /// Executes the given script name or SQL text on the database and does not return a result.
         /// </summary>
         public async Task ExecuteAsync(string textOrScriptName, object param)
-            => await NativeConnection.ExecuteAsync(EmbeddedResource.Load(textOrScriptName), param);
+            => await NativeConnection.ExecuteAsync(SqlScriptLoader.LoadSqlScript(textOrScriptName), param);
 
         #endregion
 
