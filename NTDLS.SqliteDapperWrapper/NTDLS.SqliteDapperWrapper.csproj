@@ -17,7 +17,7 @@
     <PackageReleaseNotes>
 		Automatic removal of BOM from UTF-8 encoded text.
 	</PackageReleaseNotes>
-    <Version>1.4.3</Version>
+    <Version>1.4.4</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>sqlite;dapper;managed;simple;</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -50,7 +50,7 @@
     <PackageReference Include="Dapper" Version="2.1.79" />
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.9" />
-    <PackageReference Include="NTDLS.EmbeddedResource" Version="1.0.3" />
+    <PackageReference Include="NTDLS.EmbeddedResource" Version="1.0.4" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
   </ItemGroup>
 
