@@ -1,54 +1,70 @@
 # NTDLS.SqliteDapperWrapper
 
+NTDLS.SqliteDapperWrapper is a lightweight C# wrapper around SQLite (via Microsoft.Data.Sqlite) and [Dapper](https://github.com/DapperLib/Dapper). It gives you a simple, connection-managed interface to a SQLite database while adding a few conveniences on top: executing SQL from embedded resource scripts, passing parameters, building temporary tables from in-memory value lists (a `STRING_SPLIT` replacement), attaching other databases for cross-database joins, and inspecting schema information.
+
 📦 Be sure to check out the NuGet package: https://www.nuget.org/packages/NTDLS.SqliteDapperWrapper
 
-Provides a simple interface to a Sqlite database and allows for more advanced options such as executing
-embedded scripts, passing parameters, parsing complex multi-value parameters, attaching databases for
-inner-database joins, etc. All managed and wrapped in Dapper (hence the name).
+## When to use this package
 
+Consider using NTDLS.SqliteDapperWrapper when:
 
->**Examples:**
+- **You want Dapper's ergonomics with SQLite without managing connections yourself.** Every call opens a connection, executes, then closes and disposes it — no leaked or forgotten connections.
+- **You keep your SQL in `.sql` files** as embedded resources and would rather pass `"MyScript.sql"` than load and inline the text yourself.
+- **You need to pass a list of values into a query** (e.g. "give me all rows whose id is in this list"). `CreateTempTableFrom` builds a session-scoped temp table from strings, integers, or objects so you can simply `JOIN` against it.
+- **You have multiple SQLite database files** and want to join across them — `Attach` lets you reference another database file by alias inside a query.
+- **You need quick schema introspection** — listing tables, indexes, column definitions, or checking whether a table/column/index exists.
+
+## Usage examples
+
+### Creating a factory
+
+A `SqliteManagedFactory` holds a default connection string and manages opening/closing a connection for every operation. A bare file path is accepted and converted to a `Data Source=` connection string automatically.
+
 ```csharp
-public static SqliteManagedInstance MyConnection { get; set; } = new("Data Source=.\\databaseFile.db");
-public static SqliteManagedInstance MyOtherDatabase { get; set; } = new("Data Source=.\\otherDatabase.db");
+using NTDLS.SqliteDapperWrapper;
+
+// A factory per database file. A plain path works too: new SqliteManagedFactory(".\\databaseFile.db");
+var myConnection = new SqliteManagedFactory("Data Source=.\\databaseFile.db");
+var myOtherDatabase = new SqliteManagedFactory("Data Source=.\\otherDatabase.db");
 ```
 
-```csharp
-//Each time a statement/query is executed, the NTDLS.SqliteDapperWrapper will
-//  open a connection, execute then close & dispose the connection. 
+### Executing statements and queries
 
-MyConnection.Execute("DROP TABLE IF EXISTS Test");
-MyOtherDatabase.Execute("DROP TABLE IF EXISTS Test");
-
-//Creates a table in two different databases from a script that is an embedded resource in the project.
-MyConnection.Execute("CreateTestTable.sql");
-MyOtherDatabase.Execute("CreateTestTable.sql");
-
-//Deletes the data from the table "Test".
-MyConnection.Execute("DELETE FROM Test");
-MyOtherDatabase.Execute("DELETE FROM Test");
-```
+Each call below opens a connection, runs the statement, and closes/disposes the connection. The argument may be raw SQL text or the name of an embedded `.sql` resource.
 
 ```csharp
-//Insert some records using an inline statement and parameters.
+// Inline SQL text.
+myConnection.Execute("DROP TABLE IF EXISTS Test");
+
+// An embedded resource script ("*.sql" names are loaded automatically).
+myConnection.Execute("CreateTestTable.sql");
+
+// Parameterized insert — note that Guid values are supported out of the box.
 for (int i = 0; i < 100; i++)
 {
     var param = new
     {
         Name = $"Name #{i}",
+        Guid = Guid.NewGuid(),
         Description = Guid.NewGuid().ToString()
     };
 
-    MyConnection.Execute("INSERT INTO Test (Name, Description) VALUES (@Name, @Description)", param);
+    myConnection.Execute(
+        "INSERT INTO Test (Name, Guid, Description) VALUES (@Name, @Guid, @Description)", param);
 }
+
+// Queries return typed results straight from Dapper.
+List<TestModel> results = myConnection.Query<TestModel>("SELECT * FROM Test");
 ```
 
+### Running multi-step work on one connection with `Ephemeral`
+
+`Ephemeral` opens a single connection, hands it to your lambda, and closes/disposes it afterwards — ideal for transactions or sequences of statements that should share one connection.
+
 ```csharp
-//We can use "Ephemeral" to perform multiple steps on the same connection, such as here where we
-//  begin a transaction, insert data and then optionally commit or rollback the transaction.
-//  The connection is closed and disposed after Ephemeral() executes.
-MyConnection.Ephemeral(o =>
+myConnection.Ephemeral(o =>
 {
+    // Begin a transaction on the shared connection.
     using var tx = o.BeginTransaction();
 
     try
@@ -58,10 +74,12 @@ MyConnection.Ephemeral(o =>
             var param = new
             {
                 Name = $"Name #{i}",
+                Guid = Guid.NewGuid(),
                 Description = Guid.NewGuid().ToString()
             };
 
-            o.Execute("INSERT INTO Test (Name, Description) VALUES (@Name, @Description)", param);
+            o.Execute(
+                "INSERT INTO Test (Name, Guid, Description) VALUES (@Name, @Guid, @Description)", param);
         }
 
         tx.Commit();
@@ -74,20 +92,25 @@ MyConnection.Ephemeral(o =>
 });
 ```
 
+There is also a generic overload that returns a value, plus async variants (`EphemeralAsync`).
+
+### Passing a list of values into a query with a temp table
+
+`CreateTempTableFrom` creates a session-scoped temp table containing your values. This is a simple replacement for `STRING_SPLIT`: just `JOIN` against the temp table. The returned object drops the temp table when disposed.
+
 ```csharp
-MyConnection.Ephemeral(o =>
+myConnection.Ephemeral(o =>
 {
     List<int> ids = [10, 20, 30, 40, 50, 60, 70, 80];
 
-    //By calling CreateTempTableFrom, we can create a temp table with the given name that
-    //  contains the given values. This allows us to pass ranges of values to a script.
-    //  The temp table is automatically dropped them the variable is disposed.
+    // Temp table "id_temp" gets a single Value column holding each id.
+    // It is dropped automatically when the variable is disposed.
     using var id_temp = o.CreateTempTableFrom("id_temp", ids);
 
-    //Here we are going to get the values with the id of 10, 20, 30, etc.
-    var results = o.Query<TestModel>("SELECT * FROM Test INNER JOIN id_temp ON id_temp.Value = Test.Id");
+    // Now select only the rows whose Id is in our list.
+    var results = o.Query<TestModel>(
+        "SELECT * FROM Test INNER JOIN id_temp ON id_temp.Value = Test.Id");
 
-    //Print the results.
     foreach (var result in results)
     {
         Console.WriteLine($"{result.Id} {result.Name} {result.Description}");
@@ -95,46 +118,51 @@ MyConnection.Ephemeral(o =>
 });
 ```
 
+Overloads exist for `IEnumerable<string>`, `IEnumerable<int>`, and `IEnumerable<T>` where the temp table columns mirror the properties of `T` (all stored as `TEXT`). You can also use the transaction-aware overload to create the temp table inside an existing transaction.
+
+### Bulk-inserting objects via a temp table
+
+Because the generic `CreateTempTableFrom<T>` mirrors your object's properties, you can stage a whole list of records and bulk-copy it with a single `INSERT ... SELECT`.
+
 ```csharp
-//Make some dummy records so we can pass them as a temp table.
+// Build some records in memory.
 var values = new List<TestParamModel>();
 for (int i = 0; i < 100; i++)
 {
     values.Add(new TestParamModel
     {
         Name = $"Name #{i}",
+        Guid = Guid.NewGuid(),
         Description = Guid.NewGuid().ToString()
     });
 }
-```
 
-```csharp
-//Insert some data into the "Other Database".
-MyOtherDatabase.Ephemeral(o =>
+myOtherDatabase.Ephemeral(o =>
 {
-    //By calling CreateTempTableFrom, we can create a temp table with the given name that
-    //  contains the given values from a list of anonymous or well defined objects.
-    //  This allows us to pass ranges of values to a script. The temp table is automatically
-    //  dropped them the variable is disposed.
+    // Temp table "temp_values" gets one column per property of TestParamModel.
     using var temp_values = o.CreateTempTableFrom("temp_values", values);
 
-    //Here we are going to insert the data from the temp table called "temp_values".
-    o.Execute("INSERT INTO Test (Name, Description) SELECT Name, Description FROM temp_values");
+    // Bulk copy from the temp table into the real table.
+    o.Execute("INSERT INTO Test (Name, Guid, Description) SELECT Name, Guid, Description FROM temp_values");
 });
 ```
 
+### Joining across two database files with `Attach`
+
+`Attach` attaches another database file (from the same directory as the current one) under an alias so you can reference its tables in queries. The returned object detaches the database when disposed.
+
 ```csharp
-MyConnection.Ephemeral(o =>
+myConnection.Ephemeral(o =>
 {
-    //We can "attach" another database and access data from it like they are both attached.
-    //The database is automatically "unattached" when the variable is disposed.
+    // Attach ".\\otherDatabase.db" under the alias "MyOtherDatabase".
+    // It is detached automatically when the variable is disposed.
     using var otherDatabase = o.Attach("otherDatabase.db", "MyOtherDatabase");
 
-    //Here we are going join to another database and select some values.
-    var results = o.Query<JoinedModel>
-            ("SELECT A.Id, a.Name as NameA, b.Name as NameB FROM Test as A INNER JOIN MyOtherDatabase.Test as B ON A.Id = B.Id");
+    // Cross-database join: Test lives in both databases.
+    var results = o.Query<JoinedModel>(
+        "SELECT A.Id, A.Name AS NameA, B.Name AS NameB " +
+        "FROM Test AS A INNER JOIN MyOtherDatabase.Test AS B ON A.Id = B.Id");
 
-    //Print the results.
     foreach (var result in results)
     {
         Console.WriteLine($"{result.Id} {result.NameA} {result.NameB}");
@@ -142,6 +170,29 @@ MyConnection.Ephemeral(o =>
 });
 ```
 
+An async variant, `AttachAsync`, is also available.
+
+### Inspecting the schema
+
+Both `SqliteManagedFactory` and `SqliteManagedInstance` expose helpers for schema introspection:
+
+```csharp
+// List all tables in the database.
+List<TableInfo> tables = myConnection.GetTables();
+
+// List indexes, either for one table or for the whole database.
+List<IndexInfo> indexesForTable = myConnection.GetIndexes("Test");
+List<IndexInfo> allIndexes = myConnection.GetIndexes();
+
+// Column-level details for a table (name, type, NOT NULL, default, primary key).
+List<TableSchemaInfo> schema = myConnection.GetTableSchema("Test");
+
+// Quick existence checks.
+bool hasTable = myConnection.DoesTableExist("Test");
+bool hasColumn = myConnection.DoesColumnExist("Test", "Name");
+bool hasIndex = myConnection.DoesIndexExist("Test", "IX_Test_Name");
+```
 
 ## License
+
 [MIT](https://choosealicense.com/licenses/mit/)
